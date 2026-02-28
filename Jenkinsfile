@@ -1,37 +1,42 @@
+@Library("Shared") _
 pipeline {
-    agent { label 'dev' }
+    
+    agent { label "dev" }
+    
     stages {
         stage("Code Clone") {
             steps {
-                echo "Cloning repository..."
-                git url: 'https://github.com/denish10/two-tier-flask-app.git', branch: 'master'
+                script {
+                    clone("https://github.com/LondheShubham153/two-tier-flask-app.git", "master")
+                }
+            }
+        }
+        stage("Trivy File System Scan") {
+            steps {
+                script {
+                    trivy_fs()
+                }
             }
         }
         stage("Build") {
             steps {
-                echo "Building Docker image..."
                 sh "docker build -t two-tier-flask-app ."
             }
         }
         stage("Test") {
-            steps { echo "Running tests..." }
+            steps {
+                echo "Developer / Tester tests likh ke dega..."
+            }
         }
         stage("Push to Docker Hub") {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: "dockerhubtoken",
-                    usernameVariable: "dockerhubuser",
-                    passwordVariable: "dockerhubpass"
-                )]) {
-                    sh "docker login -u ${dockerhubuser} -p ${dockerhubpass}"
-                    sh "docker tag two-tier-flask-app ${dockerhubuser}/two-tier-flask-app:latest"
-                    sh "docker push ${dockerhubuser}/two-tier-flask-app:latest"
+                script {
+                    docker_push("dockerHubCreds", "two-tier-flask-app")
                 }
             }
         }
         stage("Deploy") {
             steps {
-                echo "Deploying using Docker Compose..."
                 sh "docker compose up -d --build flask-app"
             }
         }
